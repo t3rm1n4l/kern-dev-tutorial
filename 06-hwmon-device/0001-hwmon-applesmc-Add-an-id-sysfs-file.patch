@@ -1,4 +1,4 @@
-From fc3e518e05ee62c901d57baba4d40b1324847de4 Mon Sep 17 00:00:00 2001
+From e285a326f72b3635d60784c2a43fde6ce3bd0359 Mon Sep 17 00:00:00 2001
 From: Sarath Lakshman <sarathlakshman@slynux.com>
 Date: Sat, 5 Apr 2014 15:43:53 +0530
 Subject: [PATCH] hwmon: (applesmc) Add an id sysfs file
@@ -8,11 +8,11 @@ only id string for writes.
 
 Signed-off-by: Sarath Lakshman <sarathlakshman@slynux.com>
 ---
- drivers/hwmon/applesmc.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/hwmon/applesmc.c | 39 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
 diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 62c2e32..f8b2f0d 100644
+index 62c2e32..350dab9 100644
 --- a/drivers/hwmon/applesmc.c
 +++ b/drivers/hwmon/applesmc.c
 @@ -82,6 +82,9 @@
@@ -25,19 +25,19 @@ index 62c2e32..f8b2f0d 100644
  
  /* List of keys used to read/write fan speeds */
  static const char *const fan_speed_fmt[] = {
-@@ -1058,6 +1061,29 @@ static struct applesmc_node_group temp_group[] = {
+@@ -1058,6 +1061,28 @@ static struct applesmc_node_group temp_group[] = {
  	{ }
  };
  
 +
-+static ssize_t id_show(struct kobject *kobj, struct kobj_attribute *attr,
++static ssize_t id_show(struct device *dev, struct device_attribute *attr,
 +		char *buff)
 +{
 +	memcpy(buff, id_str, sizeof(id_str));
 +	return sizeof(id_str);
 +}
 +
-+static ssize_t id_store(struct kobject *kobj, struct kobj_attribute *attr,
++static ssize_t id_store(struct device *dev, struct device_attribute *attr,
 +		const char *buff, size_t count)
 +{
 +	if (count != sizeof(id_str))
@@ -49,30 +49,29 @@ index 62c2e32..f8b2f0d 100644
 +	return count;
 +}
 +
-+static const struct kobj_attribute id_attribute =
-+	__ATTR(id, S_IRUGO | S_IWUGO, id_show, id_store);
++static DEVICE_ATTR(id, S_IRUGO | S_IWUGO, id_show, id_store);
 +
  /* Module stuff */
  
  /*
-@@ -1117,6 +1143,16 @@ out:
+@@ -1117,6 +1142,16 @@ out:
  	return ret;
  }
  
 +static int add_id_device(void)
 +{
-+	return sysfs_create_file(&pdev->dev.kobj, &id_attribute.attr);
++	return device_create_file(&pdev->dev, &dev_attr_id);
 +}
 +
 +static void remove_id_device(void)
 +{
-+	sysfs_remove_file(&pdev->dev.kobj, &id_attribute.attr);
++	device_remove_file(&pdev->dev, &dev_attr_id);
 +}
 +
  /* Create accelerometer ressources */
  static int applesmc_create_accelerometer(void)
  {
-@@ -1311,6 +1347,9 @@ static int __init applesmc_init(void)
+@@ -1311,6 +1346,9 @@ static int __init applesmc_init(void)
  		goto out_light_ledclass;
  	}
  
@@ -82,7 +81,7 @@ index 62c2e32..f8b2f0d 100644
  	return 0;
  
  out_light_ledclass:
-@@ -1351,6 +1390,7 @@ static void __exit applesmc_exit(void)
+@@ -1351,6 +1389,7 @@ static void __exit applesmc_exit(void)
  	platform_device_unregister(pdev);
  	platform_driver_unregister(&applesmc_driver);
  	release_region(APPLESMC_DATA_PORT, APPLESMC_NR_PORTS);
